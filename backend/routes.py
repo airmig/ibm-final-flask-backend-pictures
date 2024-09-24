@@ -1,7 +1,7 @@
 from . import app
 import os
 import json
-from flask import jsonify, request, make_response, abort, url_for  # noqa; F401
+from flask import Response, jsonify, request, make_response, abort, url_for  # noqa; F401
 
 SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 json_url = os.path.join(SITE_ROOT, "data", "pictures.json")
@@ -35,7 +35,7 @@ def count():
 ######################################################################
 @app.route("/picture", methods=["GET"])
 def get_pictures():
-    pass
+    return jsonify(data)
 
 ######################################################################
 # GET A PICTURE
@@ -44,7 +44,14 @@ def get_pictures():
 
 @app.route("/picture/<int:id>", methods=["GET"])
 def get_picture_by_id(id):
-    pass
+    search_result = None
+    for record in data:
+        if record["id"] == id:
+            search_result = record
+            break
+    if search_result is None:
+        return {"message": "not found"}, 404
+    return jsonify(search_result)
 
 
 ######################################################################
@@ -52,7 +59,16 @@ def get_picture_by_id(id):
 ######################################################################
 @app.route("/picture", methods=["POST"])
 def create_picture():
-    pass
+    json_record = json.loads(request.data)
+    search_result = None
+    for record in data:
+        if record["id"] == json_record["id"]:
+            search_result = record
+            break
+    if search_result is not None:
+        return {"Message": f"picture with id {json_record['id']} already present"}, 302
+    data.append(json_record)
+    return json_record, 201
 
 ######################################################################
 # UPDATE A PICTURE
@@ -61,11 +77,28 @@ def create_picture():
 
 @app.route("/picture/<int:id>", methods=["PUT"])
 def update_picture(id):
-    pass
+    json_record = json.loads(request.data)
+    search_result = None
+    for index,record in enumerate(data):
+        if record["id"] == id:
+            search_result = record
+            data[index] = json_record
+            break
+    if search_result is None:
+        return {"message": "picture not found"}, 404
+    return "updated"
 
 ######################################################################
 # DELETE A PICTURE
 ######################################################################
 @app.route("/picture/<int:id>", methods=["DELETE"])
 def delete_picture(id):
-    pass
+    search_result = None
+    for index,record in enumerate(data):
+        if record["id"] == id:
+            search_result = record
+            del(data[index])
+            break
+    if search_result is None:
+        return {"message": "picture not found"}, 404
+    return Response(status=204)
